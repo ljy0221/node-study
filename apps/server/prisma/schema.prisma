@@ -1,0 +1,45 @@
+// 쿠폰 발급 시뮬레이션 도메인 모델
+// 이 스키마는 전 단계에 걸쳐 안정적으로 유지되도록 설계했다.
+// - Campaign.issuedCount / version : 동시성 제어(원자적 UPDATE / 낙관적 락)에 사용
+// - Coupon.userKey : Stage 5 이전에는 부하테스트용 임의 키, 이후 로그인 유저 id로 매핑
+// - @@unique([campaignId, userKey]) : "1인 1매" 제약
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  totalStock  Int
+  issuedCount Int      @default(0)
+  version     Int      @default(0) // 낙관적 락용
+  createdAt   DateTime @default(now())
+
+  coupons Coupon[]
+}
+
+model Coupon {
+  id         String   @id @default(cuid())
+  campaignId String
+  userKey    String // 발급 대상 식별자 (부하테스트 임의 키 또는 유저 id)
+  code       String   @unique @default(cuid())
+  issuedAt   DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userKey]) // 1인 1매
+  @@index([campaignId])
+}
