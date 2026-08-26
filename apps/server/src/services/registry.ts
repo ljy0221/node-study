@@ -1,3 +1,4 @@
+import { atomicStrategy } from './issue.atomic.js';
 import { naiveStrategy } from './issue.naive.js';
 import type { IssueStrategy } from './types.js';
 
@@ -6,6 +7,7 @@ import type { IssueStrategy } from './types.js';
 // 요청 시 ?strategy=naive 처럼 골라서 같은 조건으로 벤치마크할 수 있게 한다.
 const strategies: Record<string, IssueStrategy> = {
   naive: naiveStrategy,
+  atomic: atomicStrategy, // Stage 3 실습 ① (직접 구현 중)
 };
 
 export const DEFAULT_STRATEGY = 'naive';
