@@ -2,7 +2,7 @@
 // Stage 2~4에서 naive / db-lock / redis 전략이 이 시그니처를 공유한다.
 export interface IssueResult {
   ok: boolean;
-  reason?: 'SOLD_OUT' | 'ALREADY_ISSUED';
+  reason?: 'SOLD_OUT' | 'ALREADY_ISSUED' | 'RETRY_EXHAUSTED';
   couponId?: string;
 }
 

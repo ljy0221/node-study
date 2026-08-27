@@ -42,7 +42,13 @@ campaignsRouter.post(
     const result = await getStrategy(strategy).issue(req.params.id, userKey);
 
     if (!result.ok) {
-      const status = result.reason === 'ALREADY_ISSUED' ? 409 : 410;
+      const statusByReason = {
+        ALREADY_ISSUED: 409,
+        SOLD_OUT: 410,
+        RETRY_EXHAUSTED: 429,
+      } as const;
+
+      const status = statusByReason[result.reason!] ?? 410;
       res.status(status).json({ ok: false, reason: result.reason });
       return;
     }
