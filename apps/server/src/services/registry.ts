@@ -4,6 +4,7 @@ import { optimisticStrategy } from './issue.optimistic.js';
 import { pessimisticStrategy } from './issue.pessimistic.js';
 import { redisStrategy } from './issue.redis.js';
 import { redisLuaStrategy } from './issue.redisLua.js';
+import { redisQueueStrategy } from './issue.redisQueue.js';
 import type { IssueStrategy } from './types.js';
 
 // 발급 전략 레지스트리.
@@ -14,7 +15,8 @@ const strategies: Record<string, IssueStrategy> = {
   pessimistic: pessimisticStrategy, // Stage 3 실습 ② ✅
   optimistic: optimisticStrategy, // Stage 3 실습 ③ ✅
   redis: redisStrategy, // Stage 4 ✅
-  'redis-lua': redisLuaStrategy, // Stage 4 심화 (직접 구현 중)
+  'redis-lua': redisLuaStrategy, // Stage 4 심화 ✅
+  'redis-queue': redisQueueStrategy, // Stage 4 심화: 비동기 큐 (직접 구현 중)
 };
 
 export const DEFAULT_STRATEGY = 'naive';

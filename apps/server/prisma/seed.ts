@@ -34,8 +34,11 @@ async function main() {
 
   // Redis 재고 카운터를 totalStock으로 리셋
   await redis.set(stockKey, STOCK);
+  // 비동기 큐도 비운다 — 큐는 DB와 독립된 저장소라, 안 비우면 이전 실행의
+  // 잔여 작업이 다음 실행과 섞여 카운터가 꼬인다(초과/누수의 원인).
+  await redis.del('issue-queue');
 
-  console.log(`seeded campaign '${CAMPAIGN_ID}' with stock=${STOCK} (redis ${stockKey}=${STOCK})`);
+  console.log(`seeded campaign '${CAMPAIGN_ID}' with stock=${STOCK} (redis ${stockKey}=${STOCK}, queue cleared)`);
 }
 
 main()

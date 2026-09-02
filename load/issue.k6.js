@@ -51,7 +51,8 @@ export default function () {
   else if (res.status === 410) soldOut.add(1);
   else if (res.status === 409) dup.add(1);
 
+  // 202 = 비동기 큐 전략의 "접수됨"(발급은 워커가 처리)
   check(res, {
-    'status is 201/409/410': (r) => [201, 409, 410].includes(r.status),
+    'status is 201/202/409/410': (r) => [201, 202, 409, 410].includes(r.status),
   });
 }

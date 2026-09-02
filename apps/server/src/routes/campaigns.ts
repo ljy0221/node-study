@@ -52,6 +52,11 @@ campaignsRouter.post(
       res.status(status).json({ ok: false, reason: result.reason });
       return;
     }
+    // 큐 전략: 슬롯 선점만 완료, 실제 발급은 워커가 처리 → 202 Accepted
+    if (result.queued) {
+      res.status(202).json({ ok: true, queued: true });
+      return;
+    }
     res.status(201).json(result);
   }),
 );

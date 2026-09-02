@@ -75,9 +75,45 @@ const res = Number(await redis.eval(STOCK_LUA, 1, stockKey));
 핵심 교훈: **"일단 하고 되돌리기"보다 "원자적으로 검사 후 실행"** 이 빠르고 깔끔하다.
 Redis는 Lua 실행 중 다른 명령을 끼워넣지 않으므로(단일 스레드) 스크립트 전체가 임계 영역이 된다.
 
-## 심화 ②(선택) 비동기 발급 큐
+## 심화 ② 비동기 발급 큐 (`redis-queue` + worker, 구현 완료)
 
-요청은 Redis 큐에 넣고 워커가 순차로 DB 반영 → 응답 지연 최소화.
+DB 쓰기를 요청 경로에서 아예 빼낸다.
+
+- **요청**(`issue.redisQueue.ts`): Lua로 슬롯 선점 → `LPUSH issue-queue` → **즉시 202 Accepted**.
+  DB를 건드리지 않는다.
+- **워커**(`worker.ts`, 별도 프로세스): `BRPOP issue-queue` → 쿠폰 생성 + issuedCount 증가.
+  중복(P2002)이면 선점 슬롯을 `INCR`로 반납. 실행: `npm run worker`.
+
+```ts
+// 요청
+const res = Number(await redis.eval(STOCK_LUA, 1, stockKey));
+if (res === -1) return { ok: false, reason: 'SOLD_OUT' };
+await redis.lpush('issue-queue', JSON.stringify({ campaignId, userKey }));
+return { ok: true, queued: true };   // → 202
+```
+
+| | 동기 redis-lua | 비동기 redis-queue |
+|--|---------------|--------------------|
+| 요청이 하는 일 | Lua + **DB 쿠폰 생성** | Lua + **LPUSH만** |
+| p95 | ~246ms | **~112ms** |
+| 발급 확정 시점 | 응답 즉시 | 워커가 큐 비운 뒤(최종 일관성) |
+
+**핵심 교훈**: DB를 요청 경로에서 빼면 응답이 가장 빠르다. 대신 발급이 "즉시"가 아니라
+"곧"이 되는 최종 일관성을 받아들여야 한다.
+
+⚠️ **큐 기반 시스템의 함정**: 큐는 DB와 **독립된 저장소**다. 테스트 중 DB만 리셋하고
+큐를 안 비우면, 이전 실행의 잔여 작업이 다음 실행과 섞여 카운터가 꼬인다(초과/누수처럼 보임).
+→ `seed`가 `DEL issue-queue`로 큐도 함께 리셋하도록 했다.
+
+### 검증 (워커를 따로 띄워야 함)
+
+```bash
+npm run worker          # 터미널 A (상주)
+npm run seed            # 터미널 B: DB + Redis키 + 큐 리셋
+k6 run -e STRATEGY=redis-queue load/issue.k6.js
+# 큐가 빌 때까지 대기 후
+npm run count           # 100
+```
 
 ## 검증
 
