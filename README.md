@@ -45,9 +45,9 @@ npm run dev
 |-------|------|------|
 | 0 | 스캐폴딩 & 워킹 스켈레톤 | [docs/00-setup.md](docs/00-setup.md) |
 | 1 | CRUD & 도메인 | (예정) |
-| 2 | 동시성 ❶ 나이브 — 경쟁 조건 재현 | (예정) |
-| 3 | 동시성 ❷ DB 락 (원자적/비관적/낙관적) | (예정) |
-| 4 | 동시성 ❸ Redis | (예정) |
+| 2 | 동시성 ❶ 나이브 — 경쟁 조건 재현 | [docs/02-race-condition.md](docs/02-race-condition.md) |
+| 3 | 동시성 ❷ DB 락 (원자적/비관적/낙관적) | [docs/03-db-locking.md](docs/03-db-locking.md) |
+| 4 | 동시성 ❸ Redis | [docs/04-redis.md](docs/04-redis.md) |
 | 5 | 인증/사용자 관리 | (예정) |
 | 6 | 마무리 & Nest/Next 마이그레이션 | (예정) |
 
