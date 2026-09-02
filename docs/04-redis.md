@@ -40,7 +40,8 @@ try {
 | atomic | ✅ 100 | ~382ms | DB(원자 UPDATE) | 정확 + 빠름 |
 | pessimistic | ✅ 100 | ~825ms | DB(행 잠금) | 락 직렬화로 느림 |
 | optimistic | ✅ 100 | ~4.3s | DB(version+재시도) | 재시도 폭풍 |
-| **redis** | ✅ 100 | **~300ms** | **Redis(DECR)** | 경합을 인메모리로 분리 → 최速 |
+| redis | ✅ 100 | ~300ms | Redis(DECR+보정) | 경합을 인메모리로 분리 |
+| **redis-lua** | ✅ 100 | **~246ms** | **Redis(Lua 원자)** | 최速, 음수 진입 없음 |
 
 ## 결론
 
@@ -48,11 +49,35 @@ try {
 선착순 이벤트에서 Redis를 쓰는 이유. 단, Redis와 DB **두 저장소의 정합성**(반납/보정)을
 직접 관리해야 하는 부담이 새로 생긴다 — 그게 이 전략의 트레이드오프.
 
-## 심화(선택)
+## 심화 ① Lua 스크립트 (`redis-lua`, 구현 완료)
 
-- **Lua 스크립트**: `GET → 검사 → DECR`을 `redis.eval`로 원자화하면 음수로 내려가는 일 자체가
-  없어져 `INCR` 보정이 불필요해진다.
-- **비동기 발급 큐**: 요청은 Redis 큐에 넣고 워커가 순차로 DB 반영 → 응답 지연 최소화.
+기존 `redis`는 "일단 DECR → 음수면 INCR로 되돌림"이라, 품절 순간 900개 요청이
+카운터를 음수로 내렸다 되돌리는 왕복(명령 2번)이 있었다. Lua로 `GET → 검사 → DECR`을
+**한 번의 원자 실행**으로 묶으면 애초에 음수로 안 내려가고 품절 보정도 사라진다.
+
+```lua
+local stock = tonumber(redis.call('GET', KEYS[1]))
+if stock == nil then return -1 end
+if stock <= 0 then return -1 end   -- 품절: DECR 안 함 → 음수 진입 없음
+return redis.call('DECR', KEYS[1])
+```
+```ts
+const res = Number(await redis.eval(STOCK_LUA, 1, stockKey));
+// res === -1 → SOLD_OUT (INCR 보정 불필요), res >= 0 → 슬롯 확보
+```
+
+| | redis | redis-lua |
+|--|-------|-----------|
+| 품절 경로 | DECR→음수→INCR (명령 2번) | eval 1번 (DECR 안 함) |
+| 음수 상태 | 순간 발생 | **구조적으로 없음** |
+| p95 | ~300ms | **~246ms** |
+
+핵심 교훈: **"일단 하고 되돌리기"보다 "원자적으로 검사 후 실행"** 이 빠르고 깔끔하다.
+Redis는 Lua 실행 중 다른 명령을 끼워넣지 않으므로(단일 스레드) 스크립트 전체가 임계 영역이 된다.
+
+## 심화 ②(선택) 비동기 발급 큐
+
+요청은 Redis 큐에 넣고 워커가 순차로 DB 반영 → 응답 지연 최소화.
 
 ## 검증
 
