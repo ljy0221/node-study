@@ -48,7 +48,7 @@ npm run dev
 | 2 | 동시성 ❶ 나이브 — 경쟁 조건 재현 | [docs/02-race-condition.md](docs/02-race-condition.md) |
 | 3 | 동시성 ❷ DB 락 (원자적/비관적/낙관적) | [docs/03-db-locking.md](docs/03-db-locking.md) |
 | 4 | 동시성 ❸ Redis | [docs/04-redis.md](docs/04-redis.md) |
-| 5 | 인증/사용자 관리 | (예정) |
+| 5 | 인증/사용자 관리 | [docs/05-auth.md](docs/05-auth.md) |
 | 6 | 마무리 & Nest/Next 마이그레이션 | (예정) |
 
 ## 구조
