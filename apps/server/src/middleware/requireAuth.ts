@@ -7,7 +7,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: { id: string; email: string };
+      user?: { id: string; email: string; role: 'USER' | 'ADMIN' };
     }
   }
 }
@@ -25,7 +25,7 @@ declare global {
 //   3) const token = header.slice(7);              // "Bearer " 7글자 뒤가 토큰
 //   4) try {
 //        const payload = verifyToken(token);       // 아까 만든 함수 (만료/위조면 throw)
-//        req.user = { id: payload.sub, email: payload.email };
+//        req.user = { id: payload.sub, email: payload.email, role: payload.role };
 //        next();                                    // 통과 → 다음 핸들러로
 //      } catch { throw new HttpError(401, '유효하지 않은 토큰'); }
 export function requireAuth(
@@ -40,7 +40,7 @@ export function requireAuth(
   const token = header.slice(7);
   try {
     const payload = verifyToken(token);
-    req.user = { id: payload.sub, email: payload.email };
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
     next();
   } catch (e) {
     throw new HttpError(401, "유효하지 않은 토큰");
@@ -63,9 +63,30 @@ export function optionalAuth(
   const token = header.slice(7);
   try {
     const payload = verifyToken(token);
-    req.user = { id: payload.sub, email: payload.email };
+    req.user = { id: payload.sub, email: payload.email, role: payload.role };
     next();
   } catch {
     throw new HttpError(401, '유효하지 않은 토큰');
   }
+}
+
+// ============================================================
+// 관리자 인가 미들웨어  ← 본문은 직접 구현
+// ============================================================
+//
+// 반드시 requireAuth 뒤에 온다: [requireAuth, requireAdmin]
+// requireAuth가 req.user를 채워주므로, 여기선 role만 확인하면 된다.
+//
+// 흐름:
+//   1) req.user?.role 이 'ADMIN'이 아니면 → throw new HttpError(403, '관리자 권한 필요')
+//      (인증(누구냐)은 requireAuth가 이미 통과시킴 → 여기선 인가(권한 있냐)만 판단)
+//      * 401(인증) vs 403(인가) 구분: 로그인은 됐지만 권한이 없으면 403
+//   2) 통과면 next()
+export function requireAdmin(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
+  if (req.user?.role !== 'ADMIN') throw new HttpError(403, '관리자 권한 필요');
+  next();
 }

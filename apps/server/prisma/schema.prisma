@@ -13,10 +13,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  role         Role     @default(USER) // Stage 1: 관리자 인가용
   createdAt    DateTime @default(now())
 }
 

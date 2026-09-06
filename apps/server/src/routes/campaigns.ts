@@ -3,9 +3,58 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { HttpError, asyncHandler } from "../middleware/errorHandler.js";
 import { getStrategy } from "../services/registry.js";
-import { optionalAuth } from "../middleware/requireAuth.js";
+import {
+  optionalAuth,
+  requireAdmin,
+  requireAuth,
+} from "../middleware/requireAuth.js";
 
 export const campaignsRouter = Router();
+
+// ── Stage 1: 캠페인 CRUD ──
+
+// GET /api/campaigns — 목록 (공개)
+// 흐름(직접 구현):
+//   prisma.campaign.findMany({ orderBy: { createdAt: "desc" } })
+//   → 각 항목에 remaining(= totalStock - issuedCount) 붙여서 res.json({ campaigns })
+campaignsRouter.get(
+  "/",
+  asyncHandler(async (_req, res) => {
+    const campaigns = await prisma.campaign.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    res.json({
+      campaigns: campaigns.map((c) => ({
+        ...c,
+        remaining: c.totalStock - c.issuedCount,
+      })),
+    });
+  }),
+);
+
+const createCampaignBody = z.object({
+  name: z.string().min(1),
+  totalStock: z.number().int().positive(),
+});
+
+// POST /api/campaigns — 생성 (관리자만)
+// requireAuth(로그인?) → requireAdmin(관리자?) 통과해야 핸들러 실행.
+// 흐름(직접 구현):
+//   1) const { name, totalStock } = createCampaignBody.parse(req.body)
+//   2) const campaign = await prisma.campaign.create({ data: { name, totalStock } })
+//   3) res.status(201).json(campaign)
+campaignsRouter.post(
+  "/",
+  requireAuth,
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    const { name, totalStock } = createCampaignBody.parse(req.body);
+    const campaign = await prisma.campaign.create({
+      data: { name, totalStock },
+    });
+    res.status(201).json(campaign);
+  }),
+);
 
 // 캠페인 단건 조회 (남은 재고 확인용)
 campaignsRouter.get(

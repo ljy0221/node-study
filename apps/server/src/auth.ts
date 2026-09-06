@@ -14,6 +14,7 @@ import { config } from "./config.js";
 export interface JwtPayload {
   sub: string; // user id
   email: string;
+  role: 'USER' | 'ADMIN'; // Stage 1: 관리자 인가용
 }
 
 // 비밀번호를 해시한다. (평문은 절대 DB에 저장하지 않는다)

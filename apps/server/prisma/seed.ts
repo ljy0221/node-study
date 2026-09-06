@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import Redis from 'ioredis';
 
 // 동시성 실험용 시드/리셋 스크립트.
@@ -38,7 +39,16 @@ async function main() {
   // 잔여 작업이 다음 실행과 섞여 카운터가 꼬인다(초과/누수의 원인).
   await redis.del('issue-queue');
 
+  // Stage 1: 관리자 계정 시드 (캠페인 생성 API 테스트용)
+  const adminHash = await bcrypt.hash('admin1234', 10);
+  await prisma.user.upsert({
+    where: { email: 'admin@demo.com' },
+    create: { email: 'admin@demo.com', passwordHash: adminHash, role: 'ADMIN' },
+    update: { role: 'ADMIN' },
+  });
+
   console.log(`seeded campaign '${CAMPAIGN_ID}' with stock=${STOCK} (redis ${stockKey}=${STOCK}, queue cleared)`);
+  console.log(`admin user: admin@demo.com / admin1234 (role=ADMIN)`);
 }
 
 main()

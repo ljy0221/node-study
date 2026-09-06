@@ -29,7 +29,11 @@ authRouter.post(
         data: { email, passwordHash },
       });
 
-      const token = signToken({ sub: user.id, email: user.email });
+      const token = signToken({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      });
 
       return res.status(201).json({ token });
     } catch (e) {
@@ -55,7 +59,11 @@ authRouter.post(
     if (!user || !(await verifyPassword(password, user.passwordHash)))
       throw new HttpError(401, "이메일 또는 비밀번호가 올바르지 않습니다");
 
-    const token = signToken({ sub: user.id, email: user.email });
+    const token = signToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
     return res.json({ token });
   }),
 );
