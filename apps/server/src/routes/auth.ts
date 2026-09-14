@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { hashPassword, signToken, verifyPassword } from "../auth.js";
 import { HttpError, asyncHandler } from "../middleware/errorHandler.js";
+import { rateLimit } from "../middleware/rateLimit.js";
 import { isUniqueViolation } from "../services/prismaError.js";
 
 export const authRouter = Router();
@@ -52,6 +53,8 @@ authRouter.post(
 //   4) signToken(...) → res.json({ token })
 authRouter.post(
   "/login",
+  // 브루트포스 방어: IP당 1분에 5회까지만 로그인 시도 허용
+  rateLimit({ keyPrefix: "login", limit: 5, windowSec: 60 }),
   asyncHandler(async (req, res) => {
     const { email, password } = credsSchema.parse(req.body);
     const user = await prisma.user.findUnique({ where: { email } });
