@@ -9,6 +9,7 @@ import {
   requireAuth,
 } from "../middleware/requireAuth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
+import { idempotency } from "../middleware/idempotency.js";
 
 export const campaignsRouter = Router();
 
@@ -88,6 +89,7 @@ campaignsRouter.post(
   "/:id/issue",
   rateLimit({keyPrefix: "issue", limit: 30, windowSec: 60}),
   optionalAuth,
+  idempotency({ keyPrefix: "issue", ttlSec: 60 }),
   asyncHandler(async (req, res) => {
     const body = issueBody.parse(req.body);
     const { strategy } = issueQuery.parse(req.query);
