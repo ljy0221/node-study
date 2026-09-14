@@ -23,6 +23,10 @@ interface RateLimitOptions {
 export function rateLimit(opts: RateLimitOptions) {
   // asyncHandler로 감싸 async throw가 errorHandler로 가게 한다(미들웨어에도 적용됨).
   return asyncHandler(async (req, _res, next) => {
+    if (process.env.RATE_LIMIT_DISABLED === "true") {
+      next();
+      return;
+    }
     const id = opts.keyFn ? opts.keyFn(req) : (req.ip ?? "unknown");
     const key = `ratelimit:${opts.keyPrefix}:${id}`;
 

@@ -14,6 +14,10 @@ import { Counter } from 'k6/metrics';
 // 실행 예:
 //   k6 run load/issue.k6.js
 //   k6 run -e STRATEGY=atomic -e VUS=300 -e ITER=2000 load/issue.k6.js
+//
+// ⚠️ Stage 5.5: 발급 엔드포인트에 IP 레이트 리밋(60초 30회)이 걸려 있다.
+//   부하테스트는 서버를 레이트 리밋 끈 채로 띄워야 429로 막히지 않는다:
+//     RATE_LIMIT_DISABLED=true npm run dev:server
 
 const API_URL = __ENV.API_URL || 'http://localhost:4000';
 const CAMPAIGN = __ENV.CAMPAIGN || 'demo-campaign';

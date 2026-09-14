@@ -8,6 +8,7 @@ import {
   requireAdmin,
   requireAuth,
 } from "../middleware/requireAuth.js";
+import { rateLimit } from "../middleware/rateLimit.js";
 
 export const campaignsRouter = Router();
 
@@ -85,6 +86,7 @@ const issueQuery = z.object({
 // ?strategy= 로 전략을 골라 같은 조건에서 동시성 거동을 비교한다.
 campaignsRouter.post(
   "/:id/issue",
+  rateLimit({keyPrefix: "issue", limit: 30, windowSec: 60}),
   optionalAuth,
   asyncHandler(async (req, res) => {
     const body = issueBody.parse(req.body);
