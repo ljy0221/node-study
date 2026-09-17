@@ -19,4 +19,9 @@ export class CampaignsService {
     }));
     // throw new Error('CampaignsService.list 미구현 — 직접 작성하세요');
   }
+
+  // 캠페인 생성 (관리자 전용 라우트에서 호출). Express의 POST /api/campaigns 로직.
+  create(name: string, totalStock: number) {
+    return this.prisma.campaign.create({ data: { name, totalStock } });
+  }
 }
